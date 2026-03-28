@@ -97,6 +97,21 @@ document.addEventListener("DOMContentLoaded", () => {
 function handleCommand(cmd) {
     cmd = cmd.trim();
 
+    if (pendingAction) {
+        if (cmd.toLowerCase() === "y") {
+            executeAction(pendingAction);
+            pendingAction = null;
+        } 
+        else if (cmd.toLowerCase() === "n") {
+            print("action cancelled");
+            pendingAction = null;
+        } 
+        else {
+            print("Error(111); False response.\nDid you respond other than Y or N?");
+        }
+        return;
+    }
+
     if (sequenceState) {
 
         if (sequenceState === "await_password") {
@@ -122,7 +137,7 @@ function handleCommand(cmd) {
 
         if (sequenceState === "authorized") {
             if (cmd === "discord:bot//ANB discord=shutdown") {
-                print("Are you sure you want to shutdown ANB#1917? [Y/N]");
+                print("$: THIS ACTION IS IRREVERSIBLE. Are you sure you want to shutdown ANB#1917? [Y/N]");
                 sequenceState = "await_shutdown_confirm";
             } else {
                 print("unknown command");
@@ -138,6 +153,10 @@ function handleCommand(cmd) {
 
     else if (cmd.toLowerCase() === "help") {
         print("Type in commands such as log_[number[number]]. Configuration systems such as sys.cfg and more.");
+    }
+
+    else if (cmd.toLowerCase() === "show devcommands") {
+        print("show devcommands\nhelp\ndir\nopen log_02\nopen log_01\nopen sys.cfg\nV0ID_2#\nnode_03//terminal//run;loadingsequence\nnode_03//terminal//run;detailedloadingsequence\nplease terminal i need this\nopen log_37\n socrates\n how to code printing\npermit user04 --ctl administrator\ndiscord:bot//ANB discord=shutdown");
     }
 
     else if (cmd.toLowerCase() === "dir") {
@@ -156,8 +175,34 @@ function handleCommand(cmd) {
         print("Error(523) Access denied; to not owner");
     }
 
+    else if (cmd.toLowerCase() === "V0ID_2#") {
+        print("Error(523) Access denied; to not owner");
+    }
+
+    else if (cmd.toLowerCase() === "node_03//terminal//run;loadingsequence") {
+        print("This will take a bit. Are you sure? [Y/N]");
+        pendingAction = "loading"
+    }
+
+    else if (cmd.toLowerCase() === "node_03//terminal//run;detailedloadingsequence") {
+        print("This will take a bit. Are you sure? [Y/N]");
+        pendingAction = "detailedloading"
+    }
+
+    else if (cmd.toLowerCase() === "please terminal i need this") {
+        print("do: permit user04 --ctl administrator\ncredentials: pTinTmMkh2$");
+    }
+
     else if (cmd.toLowerCase() === "open log_37") {
         print("hi this is a easter egg congrats if u found it :)");
+    }
+
+    else if (cmd.toLowerCase() === "socrates") {
+        print("If coding is your power, what are you without it?");
+    }
+
+    else if (cmd.toLowerCase() === "how to code printing") {
+        print("function print(text)\n‎ ‎ ‎ ‎ let output = document.getElementById\n    output.innerHTML += text.replace(/\n/g, <br> + <br>;\n     output.scrollTop = output.scrollHeight;");
     }
 
     else {
@@ -165,13 +210,82 @@ function handleCommand(cmd) {
     }
 }
 
-// SHUTDOWN SEQUENCE
-function runShutdownSequence() {
+function executeAction(action) {
+
+    if (action === "loading") {
+        runLoading();
+    }
+    if (action === "detailedloading") {
+        runLoadingDetailed();
+    }
+
+}
+
+function runLoading() {
     let steps = [
         "[##--------] 20%",
         "[####------] 40%",
         "[######----] 60%",
         "[########--] 80%",
+        "[##########] 100%"
+    ];
+
+    let i = 0;
+
+    function next() {
+        if (i < steps.length) {
+            print("LOADING " + steps[i]);
+            i++;
+            setTimeout(next, 700);
+        } else {
+            print("Command executed.");
+        }
+    }
+
+    next();
+}
+
+function runLoadingDetailed() {
+    let steps = [
+        "[#---------] 10%",
+        "[##--------] 20%",
+        "[###-------] 30%",
+        "[####------] 40%",
+        "[#####-----] 50%",
+        "[######----] 60%",
+        "[#######---] 70%",
+        "[########--] 80%",
+        "[#########-] 90%",
+        "[##########] 100%"
+    ];
+
+    let i = 0;
+
+    function next() {
+        if (i < steps.length) {
+            print("LOADING " + steps[i]);
+            i++;
+            setTimeout(next, 700);
+        } else {
+            print("Command executed.");
+        }
+    }
+
+    next();
+}
+
+// SHUTDOWN SEQUENCE
+function runShutdownSequence() {
+    let steps = [
+        "[#---------] 10%",
+        "[##--------] 20%",
+        "[###-------] 30%",
+        "[####------] 40%",
+        "[#####-----] 50%",
+        "[######----] 60%",
+        "[#######---] 70%",
+        "[########--] 80%",
+        "[#########-] 90%",
         "[##########] 100%"
     ];
 
