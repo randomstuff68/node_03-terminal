@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>node_03//terminal access</title>
+    <style>
+
+        .error {
+            color: red;
+        }
+        body {
+            background-color: black;
+            color: #00ff88;
+            font-family: monospace;
+            padding: 20px;
+        }
+        input {
+            background: black;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            font-family: monospace;
+        }
+        button {
+            background: black;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div id="login">
+    <h3>terminal://BROKEN_TERMINAL>LOG_02//[#8E959C]/node03/access.log</h3>
+    <p>> enter credentials</p>
+
+    <input id="user" placeholder="user"><br><br>
+    <input id="pass" type="password" placeholder="password"><br><br>
+    <button onclick="login()">login</button>
+
+    <p id="loginMsg"></p>
+</div>
+
+<div id="terminal" style="display:none;">
+    <h3>connected to node_03//terminal</h3>
+    <div id="output"></div>
+    <br>
+    <span>> </span><input id="cmd" autofocus>
+</div>
+
+<script>
+let pendingAction = null;
+let sequenceState = null;
+
+// LOGIN
+function login() {
+    let user = document.getElementById("user").value;
+    let pass = document.getElementById("pass").value;
+    let msg = document.getElementById("loginMsg");
+
+    msg.innerText = "";
+    msg.className = "";
+
+    if (user === "user04" && pass === "321456") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("terminal").style.display = "block";
+
+        print("access granted...\nwelcome user04\n\n> type 'help'");
+        document.getElementById("cmd").focus();
+    } else {
+        msg.innerText = "authentication failed";
+        msg.className = "error";
+    }
+}
+
+// PRINT
+function print(text) {
+    let output = document.getElementById("output");
+    output.innerHTML += text.replace(/\n/g, "<br>") + "<br>";
+    output.scrollTop = output.scrollHeight;
+}
+
+// INPUT
+document.addEventListener("DOMContentLoaded", () => {
+    const cmdInput = document.getElementById("cmd");
+
+    cmdInput.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+            let input = this.value;
+            print("> " + input);
+            handleCommand(input);
+            this.value = "";
+        }
+    });
+});
+
+// COMMAND HANDLER
+function handleCommand(cmd) {
+    cmd = cmd.trim();
+
+    if (sequenceState) {
+
+        if (sequenceState === "await_password") {
+            if (cmd === "pTinTmMkh2$") {
+                print("Access granted.");
+                sequenceState = "authorized";
+            } else {
+                print("Access denied.");
+                sequenceState = null;
+            }
+            return;
+        }
+
+        if (sequenceState === "await_shutdown_confirm") {
+            if (cmd.toLowerCase() === "y") {
+                runShutdownSequence();
+            } else {
+                print("Shutdown aborted.");
+            }
+            sequenceState = null;
+            return;
+        }
+
+        if (sequenceState === "authorized") {
+            if (cmd === "discord:bot//ANB discord=shutdown") {
+                print("Are you sure you want to shutdown ANB#1917? [Y/N]");
+                sequenceState = "await_shutdown_confirm";
+            } else {
+                print("unknown command");
+            }
+            return;
+        }
+    }
+
+    if (cmd === "permit user04 --ctl administrator") {
+        print("Please enter credentials.");
+        sequenceState = "await_password";
+    }
+
+    else if (cmd.toLowerCase() === "help") {
+        print("Type in commands such as log_[number[number]]. Configuration systems such as sys.cfg and more.");
+    }
+
+    else if (cmd.toLowerCase() === "dir") {
+        print("log_01.txt\nlog_02.txt\n...\n...\nlog_50.txt\nsys.cfg");
+    }
+
+    else if (cmd.toLowerCase() === "open log_02") {
+        print("ACCESSING log_02...\n\n>1vG17gdZTFk_c-bKbTLk7QaLVLNPxynKo");
+    }
+
+    else if (cmd.toLowerCase() === "open log_01") {
+        print("Error(224) File missing; corrupted\nDid you try to open a missing file?");
+    }
+
+    else if (cmd.toLowerCase() === "open sys.cfg") {
+        print("Error(523) Access denied; to not owner");
+    }
+
+    else if (cmd.toLowerCase() === "open log_37") {
+        print("hi this is a easter egg congrats if u found it :)");
+    }
+
+    else {
+        print("unknown command");
+    }
+}
+
+// SHUTDOWN SEQUENCE
+function runShutdownSequence() {
+    let steps = [
+        "[##--------] 20%",
+        "[####------] 40%",
+        "[######----] 60%",
+        "[########--] 80%",
+        "[##########] 100%"
+    ];
+
+    let i = 0;
+
+    function nextStep() {
+        if (i < steps.length) {
+            print(`SHUTDOWN_SEQUENCE on discord:bot//ANB ${steps[i]}`);
+            i++;
+            setTimeout(nextStep, 700);
+        } else {
+            print("Shutdown complete.");
+        }
+    }
+
+    nextStep();
+}
+</script>
+
+</body>
+</html>
