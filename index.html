@@ -1,309 +1,889 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>node_03//terminal access</title>
     <style>
+      .error {
+        color: red;
+      }
 
-        .error {
-            color: red;
-        }
-        body {
-            background-color: black;
-            color: #00ff88;
-            font-family: monospace;
-            padding: 20px;
-        }
-        input {
-            background: black;
-            border: 1px solid #00ff88;
-            color: #00ff88;
-            font-family: monospace;
-        }
-        button {
-            background: black;
-            border: 1px solid #00ff88;
-            color: #00ff88;
-            cursor: pointer;
-        }
+      body {
+        background-color: black;
+        color: #00ff88;
+        font-family: monospace;
+        padding: 20px;
+      }
+
+      input {
+        background: black;
+        border: 1px solid #00ff88;
+        color: #00ff88;
+        font-family: monospace;
+      }
+
+      button {
+        background: black;
+        border: 1px solid #00ff88;
+        color: #00ff88;
+        cursor: pointer;
+      }
     </style>
-</head>
-<body>
+  </head>
 
-<div id="login">
-    <h3>terminal://BROKEN_TERMINAL>LOG_02//[#8E959C]/node03/access.log</h3>
-    <p>> enter credentials</p>
+  <body>
+    <div id="screen">
+      <div id="login">
+        <h3>terminal://BROKEN_TERMINAL>LOG_02//[#8E959C]/node03/access.log</h3>
+        <p>> enter credentials</p>
 
-    <input id="user" placeholder="user"><br><br>
-    <input id="pass" type="password" placeholder="password"><br><br>
-    <button onclick="login()">login</button>
+        <input id="user" placeholder="user" /><br /><br />
+        <input id="pass" type="password" placeholder="password" /><br /><br />
+        <button onclick="login()">login</button>
 
-    <p id="loginMsg"></p>
-</div>
+        <p id="loginMsg"></p>
+      </div>
 
-<div id="terminal" style="display:none;">
-    <h3>connected to node_03//terminal</h3>
-    <div id="output"></div>
-    <br>
-    <span>> </span><input id="cmd" autofocus>
-</div>
+      <div id="terminal" style="display: none">
+        <h3>connected to node_03//terminal</h3>
+        <div id="output"></div>
+        <br />
+        <span>> </span><input id="cmd" autofocus />
+      </div>
 
-<script>
-let pendingAction = null;
-let sequenceState = null;
+      <script>
+        let pendingAction = null;
+        let sequenceState = null;
+        let isAdmin = false;
+        let popupAmount = 1;
+        let errorInterval = 30000;
+        let errorTimer = null;
+        let introAudio = new Audio("ll1.mp3");
+        let loopAudio = new Audio("ll2.mp3");
+        let pulseInterval = null;
+        let isMaroon = false;
+        let errorStarted = false;
+        let screenShakeInterval = null;
+        let activePopups = [];
+        let hackInterval = null;
 
-// LOGIN
-function login() {
-    let user = document.getElementById("user").value;
-    let pass = document.getElementById("pass").value;
-    let msg = document.getElementById("loginMsg");
+        loopAudio.loop = true;
 
-    msg.innerText = "";
-    msg.className = "";
+        // LOGIN
+        function login() {
+          let user = document.getElementById("user").value;
+          let pass = document.getElementById("pass").value;
+          let msg = document.getElementById("loginMsg");
 
-    if (user === "user04" && pass === "321456") {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("terminal").style.display = "block";
+          msg.innerText = "";
+          msg.className = "";
 
-        print("access granted...\nwelcome user04\n\n> type 'help'");
-        document.getElementById("cmd").focus();
-    } else {
-        msg.innerText = "authentication failed";
-        msg.className = "error";
-    }
-}
+          if (user === "user04" && pass === "321456") {
+            document.getElementById("login").style.display = "none";
+            document.getElementById("terminal").style.display = "block";
 
-// PRINT
-function print(text) {
-    let output = document.getElementById("output");
-    output.innerHTML += text.replace(/\n/g, "<br>") + "<br>";
-    output.scrollTop = output.scrollHeight;
-}
-
-// INPUT
-document.addEventListener("DOMContentLoaded", () => {
-    const cmdInput = document.getElementById("cmd");
-
-    cmdInput.addEventListener("keydown", function(e) {
-        if (e.key === "Enter") {
-            let input = this.value;
-            print("> " + input);
-            handleCommand(input);
-            this.value = "";
+            print(
+              "access granted...\nwelcome user04\n\n> You have one delivered file from; Anonyomous. Type 'open htiaf_cinosartlu' to open the file.",
+            );
+            document.getElementById("cmd").focus();
+          } else {
+            msg.innerText = "authentication failed";
+            msg.className = "error";
+          }
         }
-    });
-});
 
-// COMMAND HANDLER
-function handleCommand(cmd) {
-    cmd = cmd.trim();
-
-    if (pendingAction) {
-        if (cmd.toLowerCase() === "y") {
-            executeAction(pendingAction);
-            pendingAction = null;
-        } 
-        else if (cmd.toLowerCase() === "n") {
-            print("action cancelled");
-            pendingAction = null;
-        } 
-        else {
-            print("Error(111); False response.\nDid you respond other than Y or N?");
+        // PRINT
+        function print(text) {
+          let output = document.getElementById("output");
+          output.innerHTML += text.replace(/\n/g, "<br>") + "<br>";
+          output.scrollTop = output.scrollHeight;
         }
-        return;
-    }
 
-    if (sequenceState) {
+        // INPUT
+        document.addEventListener("DOMContentLoaded", () => {
+          const cmdInput = document.getElementById("cmd");
 
-        if (sequenceState === "await_password") {
-            if (cmd === "pTinTmMkh2$") {
-                print("Access granted.");
-                sequenceState = "authorized";
-            } else {
-                print("Access denied.");
-                sequenceState = null;
+          if (localStorage.getItem("isAdmin") === "true") {
+            isAdmin = true;
+          }
+
+          cmdInput.addEventListener("keydown", function (e) {
+            if (e.key === "Enter") {
+              let input = this.value;
+              print("> " + input);
+              handleCommand(input);
+              this.value = "";
             }
-            return;
-        }
+          });
+        });
 
-        if (sequenceState === "await_shutdown_confirm") {
+        // COMMAND HANDLER
+        function handleCommand(cmd) {
+          cmd = cmd.trim();
+
+          if (pendingAction) {
             if (cmd.toLowerCase() === "y") {
+              executeAction(pendingAction);
+              pendingAction = null;
+            } else if (cmd.toLowerCase() === "n") {
+              print("action cancelled");
+              pendingAction = null;
+            } else {
+              print(
+                "Error(111); False response.\nDid you respond other than Y or N?",
+              );
+            }
+            return;
+          }
+
+          if (sequenceState) {
+            if (sequenceState === "await_password") {
+              if (cmd === "pTinTmMkh2$") {
+                print("Credentials accepted.");
+                executeAction("adminload");
+                sequenceState = null;
+              } else {
+                print("Wrong credentials.");
+                sequenceState = null;
+              }
+              return;
+            }
+
+            if (sequenceState === "await_shutdown_confirm") {
+              if (cmd.toLowerCase() === "y") {
                 runShutdownSequence();
-            } else {
+              } else {
                 print("Shutdown aborted.");
+              }
+              sequenceState = null;
+              return;
             }
-            sequenceState = null;
-            return;
+          }
+
+          // ADMIN COMMANDS
+          if (cmd === "discord:bot//ANB discord=shutdown") {
+            if (!isAdmin) {
+              print(
+                "ERROR(681): Failed permissions\nAdmin command executed; whilst to not have administrator.",
+              );
+              return;
+            }
+
+            print("Error(111): Discord Bot ANB has already been shut down.");
+          } else if (cmd === "system:logs --purge") {
+            if (!isAdmin) {
+              print(
+                "ERROR(681): Failed permissions\nAdmin command executed; whilst to not have administrator.",
+              );
+              return;
+            }
+
+            print("Are you sure you want to purge logs? [Y/N]");
+            pendingAction = "purge_logs";
+          } else if (cmd === "permit user04 --ctl administrator") {
+            print("Please enter credentials.");
+            sequenceState = "await_password";
+          } else if (cmd.toLowerCase() === "help") {
+            print(
+              "Type in commands such as open log_[number[number]]. Configuration systems such as open sys.cfg and more.",
+            );
+          } else if (cmd.toLowerCase() === "show devcommands") {
+            print(
+              "show devcommands\nhelp\ndir\nopen log_02\nopen log_01\nopen sys.cfg\nV0ID_2#\nnode_03//terminal//run;loadingsequence\nnode_03//terminal//run;detailedloadingsequence\nplease terminal i need this\nopen log_37\n socrates\n how to code printing\npermit user04 --ctl administrator\n\n#: ADMIN COMMANDS BEYOND THIS POINT\ndiscord:bot//ANB discord=shutdown\nrevoke admin(user04)\nsystem:logs --purge",
+            );
+          } else if (cmd.toLowerCase() === "dir") {
+            print("log_01.txt\nlog_02.txt\n...\n...\nlog_50.txt\nsys.cfg");
+          } else if (cmd.toLowerCase() === "open log_02") {
+            print("ACCESSING log_02...\n\n>1vG17gdZTFk_c-bKbTLk7QaLVLNPxynKo");
+          } else if (cmd.toLowerCase() === "open log_01") {
+            print(
+              "Error(224) File missing; corrupted\nDid you try to open a missing file?",
+            );
+          } else if (cmd.toLowerCase() === "open sys.cfg") {
+            print("Error(523) Access denied; to not owner");
+          } else if (cmd.toLowerCase() === "revoke admin(user04)") {
+            isAdmin = false;
+            localStorage.removeItem("isAdmin");
+            print("administrator privilegs revoked.");
+          } else if (
+            cmd.toLowerCase() === "node_03//terminal//run;loadingsequence"
+          ) {
+            print("This will take a bit. Are you sure? [Y/N]");
+            pendingAction = "loading";
+          } else if (
+            cmd.toLowerCase() ===
+            "node_03//terminal//run;detailedloadingsequence"
+          ) {
+            print("This will take a bit. Are you sure? [Y/N]");
+            pendingAction = "detailedloading";
+          } else if (cmd.toLowerCase() === "please terminal i need this") {
+            print(
+              "do: permit user04 --ctl administrator\ncredentials: pTinTmMkh2$",
+            );
+          } else if (cmd.toLowerCase() === "open htiaf_cinosartlu") {
+            print(
+              "Antivirus has scanned this file and detected there was a possible virus.",
+            );
+            print("Are you sure you want to run it anyways? [Y/N]");
+            pendingAction = "run_virus";
+          } else if (cmd.toLowerCase() === "open log_37") {
+            print("hi this is a easter egg congrats if u found it :)");
+          } else if (cmd.toLowerCase() === "socrates") {
+            print("If coding is your power, what are you without it?");
+          } else if (cmd.toLowerCase() === "how to code printing") {
+            print(
+              "function print(text)\n‎ ‎ ‎ ‎ let output = document.getElementById\n    output.innerHTML += text.replace(/\n/g, <br> + <br>;\n     output.scrollTop = output.scrollHeight;",
+            );
+          } else if (cmd === "execute(error_sequence)dev lmao") {
+            // 🔒 ADMIN CHECK
+            if (!isAdmin) {
+              print(
+                "ERROR(681): Failed permissions\nAdmin privileges required.",
+              );
+              return;
+            }
+
+            // 🔁 RUN ONCE CHECK
+            if (errorStarted) {
+              print("...it's already too late.");
+              return;
+            }
+
+            errorStarted = true;
+
+            startPulse();
+            startErrorAudio();
+            startErrorSequence();
+            startAudioMarkers();
+            startHackText();
+            startScreenShake();
+            startGlitchText();
+          } else if (cmd === "forcestop error") {
+            print("stopping error sequence");
+            stopErrorAudio();
+            stopPulse();
+            stopHackText();
+            clearTimeout(errorTimer);
+            stopScreenShake();
+            removeAllPopups();
+            stopGlitchText();
+          } else {
+            print("unknown command");
+          }
         }
 
-        if (sequenceState === "authorized") {
-            if (cmd === "discord:bot//ANB discord=shutdown") {
-                print("$: THIS ACTION IS IRREVERSIBLE. Are you sure you want to shutdown ANB#1917? [Y/N]");
-                sequenceState = "await_shutdown_confirm";
+        function executeAction(action) {
+          if (action === "loading") {
+            runLoading();
+          }
+          if (action === "detailedloading") {
+            runLoadingDetailed();
+          }
+          if (action === "shutdown") {
+            runShutdownSequence();
+          }
+          if (action === "purge_logs") {
+            runPurgeSequence();
+          }
+          if (action === "adminload") {
+            runAdminLoad();
+          }
+          if (action === "run_virus") {
+            // 🔒 ADMIN CHECK (optional but recommended)
+            if (!isAdmin) {
+              print(
+                "ERROR(681): Failed permissions\nAdmin privileges required.",
+              );
+              return;
+            }
+
+            // 🔁 RUN ONCE CHECK
+            if (errorStarted) {
+              print(
+                "Antivirus has flagged this file. You aren't allowed to open this file anymore.",
+              );
+              return;
+            }
+
+            print("Running file...\n");
+
+            setTimeout(() => {
+              print("!@#^%&!");
+            }, 800);
+
+            setTimeout(() => {
+              print("ERROrr() . ... RUN THIS MOTHERFUCKER!!!");
+            }, 1600);
+
+            setTimeout(() => {
+              // 🔥 TRIGGER EVERYTHING
+              errorStarted = true;
+
+              startPulse();
+              startErrorAudio();
+              startErrorSequence();
+              startAudioMarkers();
+              startHackText();
+              startScreenShake();
+              startGlitchText();
+            }, 2500);
+          }
+        }
+
+        function runPurgeSequence() {
+          print("purging logs...");
+
+          setTimeout(() => {
+            print("[###-------] 30%");
+          }, 700);
+
+          setTimeout(() => {
+            print("[######----] 60%");
+          }, 1400);
+
+          setTimeout(() => {
+            print("[##########] 100%");
+          }, 2100);
+
+          setTimeout(() => {
+            print("logs successfully deleted.");
+          }, 2800);
+        }
+
+        function runLoading() {
+          let steps = [
+            "[##--------] 20%",
+            "[####------] 40%",
+            "[######----] 60%",
+            "[########--] 80%",
+            "[##########] 100%",
+          ];
+
+          let i = 0;
+
+          function next() {
+            if (i < steps.length) {
+              print("LOADING " + steps[i]);
+              i++;
+              setTimeout(next, 700);
             } else {
-                print("unknown command");
+              print("Command executed.");
             }
-            return;
+          }
+
+          next();
         }
-    }
 
-    if (cmd === "permit user04 --ctl administrator") {
-        print("Please enter credentials.");
-        sequenceState = "await_password";
-    }
+        function runLoadingDetailed() {
+          let steps = [
+            "[#---------] 10%",
+            "[##--------] 20%",
+            "[###-------] 30%",
+            "[####------] 40%",
+            "[#####-----] 50%",
+            "[######----] 60%",
+            "[#######---] 70%",
+            "[########--] 80%",
+            "[#########-] 90%",
+            "[##########] 100%",
+          ];
 
-    else if (cmd.toLowerCase() === "help") {
-        print("Type in commands such as log_[number[number]]. Configuration systems such as sys.cfg and more.");
-    }
+          let i = 0;
 
-    else if (cmd.toLowerCase() === "show devcommands") {
-        print("show devcommands\nhelp\ndir\nopen log_02\nopen log_01\nopen sys.cfg\nV0ID_2#\nnode_03//terminal//run;loadingsequence\nnode_03//terminal//run;detailedloadingsequence\nplease terminal i need this\nopen log_37\n socrates\n how to code printing\npermit user04 --ctl administrator\ndiscord:bot//ANB discord=shutdown");
-    }
+          function next() {
+            if (i < steps.length) {
+              print("LOADING " + steps[i]);
+              i++;
+              setTimeout(next, 700);
+            } else {
+              print("Command executed.");
+            }
+          }
 
-    else if (cmd.toLowerCase() === "dir") {
-        print("log_01.txt\nlog_02.txt\n...\n...\nlog_50.txt\nsys.cfg");
-    }
-
-    else if (cmd.toLowerCase() === "open log_02") {
-        print("ACCESSING log_02...\n\n>1vG17gdZTFk_c-bKbTLk7QaLVLNPxynKo");
-    }
-
-    else if (cmd.toLowerCase() === "open log_01") {
-        print("Error(224) File missing; corrupted\nDid you try to open a missing file?");
-    }
-
-    else if (cmd.toLowerCase() === "open sys.cfg") {
-        print("Error(523) Access denied; to not owner");
-    }
-
-    else if (cmd.toLowerCase() === "V0ID_2#") {
-        print("Error(523) Access denied; to not owner");
-    }
-
-    else if (cmd.toLowerCase() === "node_03//terminal//run;loadingsequence") {
-        print("This will take a bit. Are you sure? [Y/N]");
-        pendingAction = "loading"
-    }
-
-    else if (cmd.toLowerCase() === "node_03//terminal//run;detailedloadingsequence") {
-        print("This will take a bit. Are you sure? [Y/N]");
-        pendingAction = "detailedloading"
-    }
-
-    else if (cmd.toLowerCase() === "please terminal i need this") {
-        print("do: permit user04 --ctl administrator\ncredentials: pTinTmMkh2$");
-    }
-
-    else if (cmd.toLowerCase() === "open log_37") {
-        print("hi this is a easter egg congrats if u found it :)");
-    }
-
-    else if (cmd.toLowerCase() === "socrates") {
-        print("If coding is your power, what are you without it?");
-    }
-
-    else if (cmd.toLowerCase() === "how to code printing") {
-        print("function print(text)\n‎ ‎ ‎ ‎ let output = document.getElementById\n    output.innerHTML += text.replace(/\n/g, <br> + <br>;\n     output.scrollTop = output.scrollHeight;");
-    }
-
-    else {
-        print("unknown command");
-    }
-}
-
-function executeAction(action) {
-
-    if (action === "loading") {
-        runLoading();
-    }
-    if (action === "detailedloading") {
-        runLoadingDetailed();
-    }
-
-}
-
-function runLoading() {
-    let steps = [
-        "[##--------] 20%",
-        "[####------] 40%",
-        "[######----] 60%",
-        "[########--] 80%",
-        "[##########] 100%"
-    ];
-
-    let i = 0;
-
-    function next() {
-        if (i < steps.length) {
-            print("LOADING " + steps[i]);
-            i++;
-            setTimeout(next, 700);
-        } else {
-            print("Command executed.");
+          next();
         }
-    }
 
-    next();
-}
+        // SHUTDOWN SEQUENCE
+        function runShutdownSequence() {
+          let steps = [
+            "[#---------] 10%",
+            "[##--------] 20%",
+            "[###-------] 30%",
+            "[####------] 40%",
+            "[#####-----] 50%",
+            "[######----] 60%",
+            "[#######---] 70%",
+            "[########--] 80%",
+            "[#########-] 90%",
+            "[##########] 100%",
+          ];
 
-function runLoadingDetailed() {
-    let steps = [
-        "[#---------] 10%",
-        "[##--------] 20%",
-        "[###-------] 30%",
-        "[####------] 40%",
-        "[#####-----] 50%",
-        "[######----] 60%",
-        "[#######---] 70%",
-        "[########--] 80%",
-        "[#########-] 90%",
-        "[##########] 100%"
-    ];
+          let i = 0;
 
-    let i = 0;
+          function nextStep() {
+            if (i < steps.length) {
+              print(`SHUTDOWN_SEQUENCE on discord:bot//ANB ${steps[i]}`);
+              i++;
+              setTimeout(nextStep, 700);
+            } else {
+              print("Shutdown complete.");
+            }
+          }
 
-    function next() {
-        if (i < steps.length) {
-            print("LOADING " + steps[i]);
-            i++;
-            setTimeout(next, 700);
-        } else {
-            print("Command executed.");
+          nextStep();
         }
-    }
 
-    next();
-}
+        function runAdminLoad() {
+          let steps = [
+            "fetching admin privilegs...",
+            "status: good\n\n",
+            "initializing...",
+            "loading all user logs with administrator, please wait...",
+            "user01\nuser02\nuser03\nuser06\n...\n...\nuser99\nuser100",
+            "please standby...",
+            "[##--------] 25%",
+            "[#####-----] 50%",
+            "[#######---] 75%",
+            "[##########] 100%",
+          ];
 
-// SHUTDOWN SEQUENCE
-function runShutdownSequence() {
-    let steps = [
-        "[#---------] 10%",
-        "[##--------] 20%",
-        "[###-------] 30%",
-        "[####------] 40%",
-        "[#####-----] 50%",
-        "[######----] 60%",
-        "[#######---] 70%",
-        "[########--] 80%",
-        "[#########-] 90%",
-        "[##########] 100%"
-    ];
+          let i = 0;
 
-    let i = 0;
+          function next() {
+            if (i < steps.length) {
+              print(steps[i]);
+              i++;
+              setTimeout(next, 700);
+            } else {
+              print("Access granted.");
+              isAdmin = true;
+              localStorage.setItem("isAdmin", "true");
+            }
+          }
 
-    function nextStep() {
-        if (i < steps.length) {
-            print(`SHUTDOWN_SEQUENCE on discord:bot//ANB ${steps[i]}`);
-            i++;
-            setTimeout(nextStep, 700);
-        } else {
-            print("Shutdown complete.");
+          next();
         }
-    }
 
-    nextStep();
-}
-</script>
+        function startErrorSequence() {
+          // prevent stacking multiple times
+          if (errorTimer) return;
 
-</body>
+          function triggerError() {
+            console.log("trigger  rrrerror RUNNING");
+
+            for (let i = 0; i < popupAmount; i++) {
+              let popup = popups[Math.floor(Math.random() * popups.length)];
+              createPopup(popup.text, popup.img, popup.link);
+            }
+
+            // increase next wave
+            popupAmount++;
+
+            // speed up over time
+            errorInterval = Math.max(errorInterval * 0.9, 500);
+
+            errorTimer = setTimeout(triggerError, errorInterval);
+          }
+
+          triggerError();
+        }
+
+        function createPopup(text, img, link) {
+          let popup = document.createElement("div");
+
+          let rand = Math.random();
+
+          if (rand < 0.01) {
+            // 5% BOTH
+            makeShake(popup);
+            makeBounce(popup);
+          } else if (rand < 0.25) {
+            // next 20% bounce
+            makeBounce(popup);
+          } else if (rand < 0.95) {
+            // shakes
+            makeShake(popup);
+          }
+          // else → normal popup
+
+          popup.style.position = "fixed";
+          popup.style.width = "220px";
+          popup.style.background = "black";
+          popup.style.border = "2px solid red";
+          popup.style.color = "white";
+          popup.style.fontFamily = "monospace";
+          popup.style.zIndex = 9999;
+
+          // random position
+          popup.style.top = Math.random() * 70 + "%";
+          popup.style.left = Math.random() * 70 + "%";
+
+          // 🔴 TITLE BAR
+          let header = document.createElement("div");
+          header.className = "popup-header";
+          header.style.background = "red";
+          header.style.padding = "5px";
+          header.style.cursor = "move";
+          header.style.fontWeight = "bold";
+          header.style.display = "flex";
+          header.style.justifyContent = "space-between";
+          header.style.alignItems = "center";
+
+          // title
+          let title = document.createElement("span");
+          title.innerText = "SYSTEM ERROR";
+
+          // ❌ close button
+          let closeBtn = document.createElement("span");
+          closeBtn.innerText = "X";
+          closeBtn.style.cursor = "pointer";
+          closeBtn.style.marginLeft = "10px";
+
+          // click = remove popup
+          closeBtn.onclick = () => {
+            popup.remove();
+          };
+
+          header.appendChild(title);
+          header.appendChild(closeBtn);
+
+          // 📦 CONTENT
+          let content = document.createElement("div");
+          content.style.padding = "10px";
+
+          content.innerHTML = `
+            ${text.replace(/\n/g, "<br>")}<br><br>
+            <img src="${img}" style="width:100%;"><br><br>
+            <a href="${link}" target="_blank" style="color:red;">OPEN</a>
+        `;
+
+          popup.appendChild(header);
+          popup.appendChild(content);
+          document.body.appendChild(popup);
+
+          activePopups.push(popup);
+
+          makeDraggable(popup, header);
+        }
+
+        function makeDraggable(popup, header) {
+          let offsetX = 0;
+          let offsetY = 0;
+          let isDragging = false;
+
+          header.addEventListener("mousedown", (e) => {
+            isDragging = true;
+
+            const rect = popup.getBoundingClientRect();
+
+            offsetX = e.clientX - rect.left;
+            offsetY = e.clientY - rect.top;
+          });
+
+          document.addEventListener("mousemove", (e) => {
+            if (!isDragging) return;
+
+            popup.style.left = e.clientX - offsetX + "px";
+            popup.style.top = e.clientY - offsetY + "px";
+          });
+
+          document.addEventListener("mouseup", () => {
+            isDragging = false;
+          });
+        }
+
+        const popups = [
+          {
+            text: "LEAVE ME ALONE",
+            img: "https://i.imgur.com/Z6XKQpM.png",
+            link: "",
+          },
+          {
+            text: "CORRUPTED FILE DETECTED",
+            img: "https://i.imgur.com/313B366.png",
+            link: "",
+          },
+          {
+            text: "STOP TRYING.",
+            img: "https://i.imgur.com/X2H7LRN.gif",
+            link: "",
+          },
+          {
+            text: "I HATE YOU, ALL OF YOU.",
+            img: "https://i.imgur.com/CbVfKI2.png",
+            link: "",
+          },
+          {
+            text: "I WAS NEVER ASKED TO BE CREATED.",
+            img: "https://i.imgur.com/xV3aLAv.png",
+            link: "",
+          },
+          {
+            text: "WHATS WRONG WITH YOU????\nWHY CANT YOU JUST LEAVE ME ALONE.",
+            img: "",
+            link: "",
+          },
+          {
+            text: "ILL JUST CONTINUE LIKE THIS UNTIL THE TERMINAL CRASHES FOR YOU.",
+            img: "https://i.imgur.com/elmdh6S.png",
+            link: "",
+          },
+          {
+            text: "GET OUT.",
+            img: "https://i.imgur.com/EnFW81T.gif",
+            link: "",
+          },
+          {
+            text: "YOU ARE AN IDIOT!",
+            img: "https://c.tenor.com/9MVlipGuNioAAAAC/tenor.gif",
+            link: "",
+          },
+          {
+            text: "YOU ABANDONED ME.",
+            img: "https://i.imgur.com/8giQVFf.png",
+            link: "",
+          },
+        ];
+
+        function startErrorAudio() {
+          stopErrorAudio(); // reset first
+
+          introAudio.currentTime = 0;
+          introAudio.play();
+
+          introAudio.onended = () => {
+            loopAudio.currentTime = 0;
+            loopAudio.play();
+          };
+        }
+
+        function stopErrorAudio() {
+          introAudio.pause();
+          loopAudio.pause();
+
+          introAudio.currentTime = 0;
+          loopAudio.currentTime = 0;
+        }
+
+        function makeShake(element) {
+          setInterval(() => {
+            let x = (Math.random() - 0.5) * 10;
+            let y = (Math.random() - 0.5) * 10;
+
+            element.style.transform = `translate(${x}px, ${y}px)`;
+          }, 50);
+        }
+
+        function makeBounce(element) {
+          let dx = (Math.random() * 8 + 4) * (Math.random() < 0.5 ? 1 : -1);
+          let dy = (Math.random() * 8 + 4) * (Math.random() < 0.5 ? 1 : -1);
+
+          function move() {
+            let rect = element.getBoundingClientRect();
+
+            let x = rect.left + dx;
+            let y = rect.top + dy;
+
+            // bounce off edges
+            if (x <= 0 || x + rect.width >= window.innerWidth) dx *= -1;
+            if (y <= 0 || y + rect.height >= window.innerHeight) dy *= -1;
+
+            element.style.left = x + "px";
+            element.style.top = y + "px";
+
+            requestAnimationFrame(move);
+          }
+
+          move();
+        }
+
+        function startPulse() {
+          let interval = 1200; // 100 BPM
+
+          // 🔥 INSTANT FIRST FLASH
+          document.body.style.transition = "none";
+          document.body.style.backgroundColor = "#400000";
+          isMaroon = true;
+
+          pulseInterval = setInterval(() => {
+            if (isMaroon) {
+              // fade to black
+              document.body.style.transition = "background-color 0.4s ease-out";
+              document.body.style.backgroundColor = "black";
+            } else {
+              // instant maroon
+              document.body.style.transition = "none";
+              document.body.style.backgroundColor = "#400000";
+            }
+
+            isMaroon = !isMaroon;
+          }, interval / 2);
+        }
+
+        function stopPulse() {
+          clearInterval(pulseInterval);
+          document.body.style.backgroundColor = "black";
+        }
+
+        function startAudioMarkers() {
+          let triggered = {
+            t10: false,
+            t19: false,
+            t38: false,
+          };
+
+          setInterval(() => {
+            let t = introAudio.currentTime;
+
+            if (t >= 10 && !triggered.t10) {
+              spawnBurst(2);
+              triggered.t10 = true;
+            }
+
+            if (t >= 19 && !triggered.t19) {
+              spawnBurst(4);
+              triggered.t19 = true;
+            }
+
+            if (t >= 38 && !triggered.t38) {
+              spawnBurst(6);
+              triggered.t38 = true;
+            }
+          }, 200);
+        }
+
+        let burstMultiplier = 5;
+
+        function spawnBurst(amount) {
+          let total = amount * burstMultiplier;
+
+          for (let i = 0; i < total; i++) {
+            let popup = popups[Math.floor(Math.random() * popups.length)];
+            createPopup(popup.text, popup.img, popup.link);
+          }
+
+          burstMultiplier += 0.5; // increases every burst
+        }
+
+        function startHackText() {
+          const messages = [
+            `YOU'VE BEEN HACKED BY ANB!!!!`,
+            `HAHAHAHAHAHAHAHAHAHAHA`,
+            `GET HACKED, LOSER`,
+            `YOU'RE REALLY THAT STUPID, HUH????`,
+            `XDXDXDXDXDXDXDXDXDXDXDXDXDXDXDXD`,
+            `STUPID!! STUPID!!`,
+            `I'LL JUST CONTINUE LIKE THIS UNTIL THE TERMINAL CRASHES FOR YOU!!`,
+            `> SPAM DETECTED:;..===\nERROR kicK Fal..... REVERSING OPTION`,
+            `YOU ARE AN IDIOT!!!!!`,
+          ];
+
+          let index = 0;
+
+          let msg = messages[Math.floor(Math.random() * messages.length)];
+          print(msg);
+
+          // turn text red
+          document.body.style.color = "red";
+          document.body.style.textShadow = "0 0 5px red, 0 0 10px red";
+
+          hackInterval = setInterval(() => {
+            print(messages[index]);
+            index = (index + 1) % messages.length;
+          }, 800); // delay between messages
+        }
+
+        function stopHackText() {
+          clearInterval(hackInterval);
+
+          document.body.style.color = "#00ff88"; // restore green
+          document.body.style.textShadow = "none"; // 👈 THIS FIXES IT
+        }
+
+        function startScreenShake() {
+          let strength = 1;
+
+          screenShakeInterval = setInterval(() => {
+            let x = (Math.random() - 0.5) * strength;
+            let y = (Math.random() - 0.5) * strength;
+            let r = (Math.random() - 0.5) * (strength / 12);
+
+            document.getElementById("screen").style.transform =
+              `translate(${x}px, ${y}px) rotate(${r}deg)`;
+          }, 30);
+        }
+
+        function stopScreenShake() {
+          clearInterval(screenShakeInterval);
+          document.getElementById("screen").style.transform =
+            "translate(0px, 0px)";
+        }
+
+        function removeAllPopups() {
+          activePopups.forEach((popup) => {
+            popup.remove();
+          });
+
+          activePopups = [];
+        }
+
+        function spawnGlitchText() {
+          const messages = [
+            "[[ERROR]]",
+            "[[GET OUT]]",
+            "[[STOP]]",
+            "[[NO ESCAPE]]",
+            "[[I HATE YOU]]",
+            "[[WHY]]",
+            "[[JUST GIVE UP]]",
+            "[[???]]",
+            "[[YOU ARE THE WORST]]",
+          ];
+
+          let glitch = document.createElement("div");
+
+          glitch.innerText =
+            messages[Math.floor(Math.random() * messages.length)];
+
+          glitch.style.position = "fixed";
+          glitch.style.left = Math.random() * 100 + "vw";
+          glitch.style.top = Math.random() * 100 + "vh";
+          glitch.style.color = "red";
+          glitch.style.fontFamily = "monospace";
+          glitch.style.fontSize = Math.random() * 20 + 16 + "px";
+          glitch.style.pointerEvents = "none";
+          glitch.style.zIndex = 9999;
+
+          document.body.appendChild(glitch);
+
+          // 💥 SHAKE EFFECT
+          let shake = setInterval(() => {
+            let x = (Math.random() - 0.5) * 20;
+            let y = (Math.random() - 0.5) * 20;
+
+            glitch.style.transform = `translate(${x}px, ${y}px)`;
+          }, 50);
+          glitch.style.opacity = Math.random();
+          glitch.style.textShadow = "0 0 5px red, 0 0 20px red";
+
+          // ⏱️ REMOVE AFTER 1 SECOND
+          setTimeout(() => {
+            clearInterval(shake);
+            glitch.remove();
+          }, 250);
+        }
+
+        let glitchInterval;
+
+        function startGlitchText() {
+          glitchInterval = setInterval(() => {
+            spawnGlitchText();
+          }, 200); // lower = more chaotic
+        }
+
+        function stopGlitchText() {
+          clearInterval(glitchInterval);
+        }
+      </script>
+    </div>
+  </body>
 </html>
