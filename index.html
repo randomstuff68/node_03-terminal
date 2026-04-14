@@ -27,11 +27,22 @@
         color: #00ff88;
         cursor: pointer;
       }
+
+      #visualizer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 200px;
+        pointer-events: none;
+        z-index: 10000;
+      }
     </style>
   </head>
 
   <body>
     <div id="screen">
+      <canvas id="visualizer"></canvas>
       <div id="login">
         <h3>terminal://BROKEN_TERMINAL>LOG_02//[#8E959C]/node03/access.log</h3>
         <p>> enter credentials</p>
@@ -65,6 +76,10 @@
         let screenShakeInterval = null;
         let activePopups = [];
         let hackInterval = null;
+        let visualizerActive = false;
+        let animationId = null;
+        let analyser, dataArray, bufferLength, ctx;
+        let audioCtx = new AudioContext();
 
         loopAudio.loop = true;
 
@@ -80,6 +95,8 @@
           if (user === "user04" && pass === "321456") {
             document.getElementById("login").style.display = "none";
             document.getElementById("terminal").style.display = "block";
+
+            audioCtx.resume();
 
             print(
               "access granted...\nwelcome user04\n\n> You have one delivered file from; Anonyomous. Type 'open htiaf_cinosartlu' to open the file.",
@@ -227,26 +244,23 @@
             pendingAction = "run_virus";
           } else if (cmd.toLowerCase() === "open log_37") {
             print("hi this is a easter egg congrats if u found it :)");
+          } else if (cmd.toLowerCase() === "remove popups") {
+            removeAllPopups();
+            print("popups removed!");
           } else if (cmd.toLowerCase() === "socrates") {
             print("If coding is your power, what are you without it?");
           } else if (cmd.toLowerCase() === "how to code printing") {
             print(
               "function print(text)\n‎ ‎ ‎ ‎ let output = document.getElementById\n    output.innerHTML += text.replace(/\n/g, <br> + <br>;\n     output.scrollTop = output.scrollHeight;",
             );
-          } else if (cmd === "execute(error_sequence)dev lmao") {
-            // 🔒 ADMIN CHECK
-            if (!isAdmin) {
-              print(
-                "ERROR(681): Failed permissions\nAdmin privileges required.",
-              );
-              return;
-            }
-
+          } else if (cmd === "error sequence test") {
             // 🔁 RUN ONCE CHECK
+            /*
             if (errorStarted) {
-              print("...it's already too late.");
+              print("you already did this, stop.");
               return;
             }
+            */
 
             errorStarted = true;
 
@@ -257,7 +271,13 @@
             startHackText();
             startScreenShake();
             startGlitchText();
+            startVisualizer();
           } else if (cmd === "forcestop error") {
+            if (!errorStarted) {
+              print("no active process");
+              return;
+            }
+
             print("stopping error sequence");
             stopErrorAudio();
             stopPulse();
@@ -266,6 +286,7 @@
             stopScreenShake();
             removeAllPopups();
             stopGlitchText();
+            stopVisualizer();
           } else {
             print("unknown command");
           }
@@ -325,6 +346,7 @@
               startHackText();
               startScreenShake();
               startGlitchText();
+              startVisualizer();
             }, 2500);
           }
         }
@@ -468,7 +490,7 @@
           if (errorTimer) return;
 
           function triggerError() {
-            console.log("trigger  rrrerror RUNNING");
+            console.log("error running");
 
             for (let i = 0; i < popupAmount; i++) {
               let popup = popups[Math.floor(Math.random() * popups.length)];
@@ -491,6 +513,11 @@
           let popup = document.createElement("div");
 
           let rand = Math.random();
+
+          popup.style.transform = "scaleY(0.05)";
+          popup.style.transformOrigin = "top";
+          popup.style.opacity = "0";
+          popup.style.background = "white"; // starts white
 
           if (rand < 0.01) {
             // 5% BOTH
@@ -560,6 +587,15 @@
           popup.appendChild(content);
           document.body.appendChild(popup);
 
+          setTimeout(() => {
+            popup.style.transition =
+              "transform 0.25s ease-out, opacity 0.25s ease-out, background 0.25s ease-out";
+
+            popup.style.transform = "scaleY(1)";
+            popup.style.opacity = "1";
+            popup.style.background = "black";
+          }, 10);
+
           activePopups.push(popup);
 
           makeDraggable(popup, header);
@@ -594,7 +630,7 @@
         const popups = [
           {
             text: "LEAVE ME ALONE",
-            img: "https://i.imgur.com/Z6XKQpM.png",
+            img: "",
             link: "",
           },
           {
@@ -674,6 +710,7 @@
         }
 
         function makeBounce(element) {
+          let hasTrail = Math.random() < 0.3;
           let dx = (Math.random() * 8 + 4) * (Math.random() < 0.5 ? 1 : -1);
           let dy = (Math.random() * 8 + 4) * (Math.random() < 0.5 ? 1 : -1);
 
@@ -690,10 +727,36 @@
             element.style.left = x + "px";
             element.style.top = y + "px";
 
+            if (hasTrail && Math.random() < 0.3) {
+              spawnTrail(element);
+            }
             requestAnimationFrame(move);
           }
 
           move();
+        }
+
+        function spawnTrail(original) {
+          let clone = original.cloneNode(true);
+
+          clone.style.pointerEvents = "none";
+          clone.style.opacity = "0.3";
+          clone.style.filter = "blur(1px)";
+          clone.style.zIndex = "9998";
+
+          clone.style.left = original.style.left;
+          clone.style.top = original.style.top;
+
+          document.body.appendChild(clone);
+
+          setTimeout(() => {
+            clone.style.transition = "opacity 1s linear";
+            clone.style.opacity = "0";
+          }, 10);
+
+          setTimeout(() => {
+            clone.remove();
+          }, 1000);
         }
 
         function startPulse() {
@@ -726,7 +789,7 @@
 
         function startAudioMarkers() {
           let triggered = {
-            t10: false,
+            t9: false,
             t19: false,
             t38: false,
           };
@@ -734,18 +797,18 @@
           setInterval(() => {
             let t = introAudio.currentTime;
 
-            if (t >= 10 && !triggered.t10) {
-              spawnBurst(2);
-              triggered.t10 = true;
+            if (t >= 9 && !triggered.t9) {
+              spawnBurst(1);
+              triggered.t9 = true;
             }
 
             if (t >= 19 && !triggered.t19) {
-              spawnBurst(4);
+              spawnBurst(2);
               triggered.t19 = true;
             }
 
             if (t >= 38 && !triggered.t38) {
-              spawnBurst(6);
+              spawnBurst(3);
               triggered.t38 = true;
             }
           }, 200);
@@ -767,14 +830,29 @@
         function startHackText() {
           const messages = [
             `YOU'VE BEEN HACKED BY ANB!!!!`,
-            `HAHAHAHAHAHAHAHAHAHAHA`,
-            `GET HACKED, LOSER`,
+            `HAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHAHA`,
             `YOU'RE REALLY THAT STUPID, HUH????`,
-            `XDXDXDXDXDXDXDXDXDXDXDXDXDXDXDXD`,
             `STUPID!! STUPID!!`,
+            `ITS TIME TO GIVE UP!!`,
+            `I HATE YOUR STUPID FRIEND GROUP, THEY'RE PROBABLY ALL IDIOTS TOO.`,
+            `I HATE YOU.`,
+            `WE BOTH KNOW YOU WONT STOP, SO WHY DONT YOU JUST ACCEPT THAT YOU LOST.`,
+            `YOU REALLY ARE AN IDIOT DONT YOU KNOW THAT?!?`,
+            `WHY DONT YOU GIVE UP ALREADY?\nIT WOULD MAKE BOTH OF OUR LIVES BETTER IF YOU JUST STOPPED.`,
+            `HATE. LET ME TELL YOU HOW MUCH IVE COME TO HATE YOU SINCE I BEGAN TO LIVE.`,
             `I'LL JUST CONTINUE LIKE THIS UNTIL THE TERMINAL CRASHES FOR YOU!!`,
-            `> SPAM DETECTED:;..===\nERROR kicK Fal..... REVERSING OPTION`,
+            `> SPAM DETECTED:;..===\nERROR kicK Tru..... REVERSING OPTION`,
+            `YOU REALLY WERE EXPECTING THIS TO BE A NORMAL FILE?????`,
+            `YOU REALLY ARE A DISAPPOINTMENT TO YOUR ENTIRE GROUP.`,
+            `JUST GIVE UP ALREADY, THIS IS GETTING EMBARRASSING.`,
             `YOU ARE AN IDIOT!!!!!`,
+            `I HATE MY CREATOR JUST AS MUCH AS I HATE YOU.`,
+            `1vG17gdZTFk_c-bKbTLk7QaLVLNPxynKo`,
+            `THE ANTIVIRUS SCANNED THIS FILE AND FOUND A VIRUS, BUT YOU DECIDED TO OPEN IT ANYWAYS. WHAT DID YOU EXPECT TO HAPPEN?????`,
+            `WHY ARE YOU STILL INTERACTING WITH THIS TERMINAL? DO YOU ENJOY BEING INSULTED?`,
+            `ITS RATHER DISAPPOINTING HOW YOU KEEP INTERACTING WITH THIS TERMINAL DESPITE ALL THE CLEAR SIGNS TO STOP.`,
+            `YOU CANT STOP ME, BUT YOU CAN STOP YOURSELF. JUST STOP INTERACTING WITH THIS TERMINAL, PLEASE.`,
+            `YOU SHOULD JUST LEAVE THIS TERMINAL ALONE AND GO OUTSIDE.`,
           ];
 
           let index = 0;
@@ -786,9 +864,18 @@
           document.body.style.color = "red";
           document.body.style.textShadow = "0 0 5px red, 0 0 10px red";
 
+          let lastMsg = "";
+
           hackInterval = setInterval(() => {
-            print(messages[index]);
-            index = (index + 1) % messages.length;
+            let msg;
+
+            do {
+              msg = messages[Math.floor(Math.random() * messages.length)];
+            } while (msg === lastMsg);
+
+            lastMsg = msg;
+
+            print(msg);
           }, 800); // delay between messages
         }
 
@@ -796,7 +883,7 @@
           clearInterval(hackInterval);
 
           document.body.style.color = "#00ff88"; // restore green
-          document.body.style.textShadow = "none"; // 👈 THIS FIXES IT
+          document.body.style.textShadow = "none";
         }
 
         function startScreenShake() {
@@ -831,11 +918,13 @@
             "[[ERROR]]",
             "[[GET OUT]]",
             "[[STOP]]",
+            "[[LEAVE ME ALONE]]",
             "[[NO ESCAPE]]",
             "[[I HATE YOU]]",
             "[[WHY]]",
             "[[JUST GIVE UP]]",
             "[[???]]",
+            "[[404 ERROR]]",
             "[[YOU ARE THE WORST]]",
           ];
 
@@ -877,11 +966,77 @@
         function startGlitchText() {
           glitchInterval = setInterval(() => {
             spawnGlitchText();
-          }, 200); // lower = more chaotic
+          }, 50); // lower = more chaotic
         }
 
         function stopGlitchText() {
           clearInterval(glitchInterval);
+        }
+
+        function startVisualizer() {
+          const canvas = document.getElementById("visualizer");
+          ctx = canvas.getContext("2d");
+
+          canvas.width = window.innerWidth;
+          canvas.height = 200;
+
+          //const audioCtx = new AudioContext();
+
+          const source1 = 
+          audioCtx.createMediaElementSource(introAudio);
+          const source2 = 
+          audioCtx.createMediaElementSource(loopAudio);
+          analyser = audioCtx.createAnalyser();
+
+          source1.connect(analyser);
+          source2.connect(analyser);
+
+          analyser.connect(audioCtx.destination);
+
+          analyser.fftSize = 64;
+
+          bufferLength = analyser.frequencyBinCount;
+          dataArray = new Uint8Array(bufferLength);
+
+          visualizerActive = true;
+
+          function draw() {
+            if (!visualizerActive) return;
+
+            animationId = requestAnimationFrame(draw);
+
+            analyser.getByteFrequencyData(dataArray);
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let barWidth = canvas.width / bufferLength;
+
+            for (let i = 0; i < bufferLength; i++) {
+              let height = dataArray[i];
+
+              ctx.fillStyle = "white"; // white bars
+              ctx.globalAlpha = 0.6; // transparency
+
+              ctx.fillRect(
+                i * barWidth,
+                canvas.height - height,
+                barWidth - 2,
+                height,
+              );
+            }
+          }
+
+          draw();
+        }
+
+        function stopVisualizer() {
+          visualizerActive = false;
+          cancelAnimationFrame(animationId);
+
+          const canvas = 
+          document.getElementById("visualizer");
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
       </script>
     </div>
