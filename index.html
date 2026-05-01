@@ -12,6 +12,7 @@
         color: #00ff88;
         font-family: monospace;
         padding: 20px;
+        overflow-x: hidden;
       }
 
       input {
@@ -28,23 +29,48 @@
         cursor: pointer;
       }
 
+      /*
       #visualizer {
         position: fixed;
-        bottom: 0;
+        top: 0;
         left: 0;
         width: 100%;
-        height: 200px;
+        height: 100%;
         pointer-events: none;
-        z-index: 10000;
+        z-index: 0;
+      }
+      */
+
+      @keyframes screenPulse {
+        0% {
+          transform: scale(1);
+        }
+
+        1% {
+          transform: scale(1.01);
+          /* 🔥 INSTANT jump */
+        }
+
+        100% {
+          transform: scale(1);
+          /* slow return */
+        }
+      }
+
+      .pulse-active {
+        animation: screenPulse 0.6s linear infinite;
+      }
+
+      #screen {
+        transform-origin: center;
       }
     </style>
   </head>
 
   <body>
     <div id="screen">
-      <canvas id="visualizer"></canvas>
       <div id="login">
-        <h3>terminal://BROKEN_TERMINAL>LOG_02//[#8E959C]/node03/access.log</h3>
+        <h3>terminal://LOG_02//[#8E959C]/node03/access.log</h3>
         <p>> enter credentials</p>
 
         <input id="user" placeholder="user" /><br /><br />
@@ -80,7 +106,11 @@
         let animationId = null;
         let analyser, dataArray, bufferLength, ctx;
         let audioCtx = new AudioContext();
+        isStopping = false;
+        const screen = document.getElementById("screen");
+        const ll3 = new Audio("ll3.mp3");
 
+        ll3.loop = false;
         loopAudio.loop = true;
 
         // LOGIN
@@ -92,18 +122,18 @@
           msg.innerText = "";
           msg.className = "";
 
-          if (user === "user04" && pass === "321456") {
+          if (user === "user04" && pass === "11197440") {
             document.getElementById("login").style.display = "none";
             document.getElementById("terminal").style.display = "block";
 
-            audioCtx.resume();
+            //audioCtx.resume();
 
             print(
               "access granted...\nwelcome user04\n\n> You have one delivered file from; Anonyomous. Type 'open htiaf_cinosartlu' to open the file.",
             );
             document.getElementById("cmd").focus();
           } else {
-            msg.innerText = "authentication failed";
+            msg.innerText = "authentication failed; wrong name or password.";
             msg.className = "error";
           }
         }
@@ -247,6 +277,8 @@
           } else if (cmd.toLowerCase() === "remove popups") {
             removeAllPopups();
             print("popups removed!");
+          } else if (cmd === "note") {
+            spawnTxtFile();
           } else if (cmd.toLowerCase() === "socrates") {
             print("If coding is your power, what are you without it?");
           } else if (cmd.toLowerCase() === "how to code printing") {
@@ -256,11 +288,11 @@
           } else if (cmd === "error sequence test") {
             // 🔁 RUN ONCE CHECK
             /*
-            if (errorStarted) {
-              print("you already did this, stop.");
-              return;
-            }
-            */
+                  if (errorStarted) {
+                    print("you already did this, stop.");
+                    return;
+                  }
+                  */
 
             errorStarted = true;
 
@@ -271,22 +303,32 @@
             startHackText();
             startScreenShake();
             startGlitchText();
-            startVisualizer();
-          } else if (cmd === "forcestop error") {
+            //startVisualizer();
+          } else if (cmd === "clear; terminal//virus_check --reset") {
             if (!errorStarted) {
-              print("no active process");
+              print("Nothing to reset, terminal is clean.");
               return;
             }
 
-            print("stopping error sequence");
-            stopErrorAudio();
-            stopPulse();
-            stopHackText();
-            clearTimeout(errorTimer);
-            stopScreenShake();
-            removeAllPopups();
-            stopGlitchText();
-            stopVisualizer();
+            loopAudio.pause();
+            loopAudio.currentTime = 0;
+
+            ll3.currentTime = 0;
+            ll3.play();
+
+            setTimeout(() => {
+              // 🛑 stop pulse
+              document
+                .getElementById("screen")
+                .classList.remove("pulse-active");
+
+              // 🧹 start removing popups slowly
+              startShutdownSequence();
+            }, 5000); // 5 second delay
+
+            print(
+              "Virus check initiated...\nResetting terminal in 5 seconds. Please wait...",
+            );
           } else {
             print("unknown command");
           }
@@ -346,7 +388,7 @@
               startHackText();
               startScreenShake();
               startGlitchText();
-              startVisualizer();
+              //startVisualizer();
             }, 2500);
           }
         }
@@ -540,6 +582,8 @@
           popup.style.fontFamily = "monospace";
           popup.style.zIndex = 9999;
 
+          popup.hasTrail = true; // or false for txt
+
           // random position
           popup.style.top = Math.random() * 70 + "%";
           popup.style.left = Math.random() * 70 + "%";
@@ -578,10 +622,10 @@
           content.style.padding = "10px";
 
           content.innerHTML = `
-            ${text.replace(/\n/g, "<br>")}<br><br>
-            <img src="${img}" style="width:100%;"><br><br>
-            <a href="${link}" target="_blank" style="color:red;">OPEN</a>
-        `;
+                            ${text.replace(/\n/g, "<br>")}<br><br>
+                            <img src="${img}" style="width:100%;"><br><br>
+                            <a href="${link}" target="_blank" style="color:red;">OPEN</a>
+                        `;
 
           popup.appendChild(header);
           popup.appendChild(content);
@@ -618,8 +662,13 @@
           document.addEventListener("mousemove", (e) => {
             if (!isDragging) return;
 
+            console.log("MOVING");
+
             popup.style.left = e.clientX - offsetX + "px";
             popup.style.top = e.clientY - offsetY + "px";
+            if (popup.hasTrail) {
+              spawnTrail(popup);
+            }
           });
 
           document.addEventListener("mouseup", () => {
@@ -689,6 +738,7 @@
           introAudio.onended = () => {
             loopAudio.currentTime = 0;
             loopAudio.play();
+            screen.classList.add("pulse-active");
           };
         }
 
@@ -720,16 +770,16 @@
             let x = rect.left + dx;
             let y = rect.top + dy;
 
-            // bounce off edges
             if (x <= 0 || x + rect.width >= window.innerWidth) dx *= -1;
             if (y <= 0 || y + rect.height >= window.innerHeight) dy *= -1;
 
             element.style.left = x + "px";
             element.style.top = y + "px";
 
-            if (hasTrail && Math.random() < 0.3) {
-              spawnTrail(element);
+            if (hasTrail && Math.random() < 0.5) {
+              spawnTrail(element); // 🔥 FIXED
             }
+
             requestAnimationFrame(move);
           }
 
@@ -737,22 +787,20 @@
         }
 
         function spawnTrail(original) {
-          let clone = original.cloneNode(true);
+          if (isStopping) return;
+          const clone = original.cloneNode(true);
+          const rect = original.getBoundingClientRect();
+          clone.classList.add("trail-clone");
 
+          clone.style.position = "fixed";
+          clone.style.left = rect.left + "px";
+          clone.style.top = rect.top + "px";
+
+          clone.style.opacity = "0.8";
           clone.style.pointerEvents = "none";
-          clone.style.opacity = "0.3";
-          clone.style.filter = "blur(1px)";
-          clone.style.zIndex = "9998";
-
-          clone.style.left = original.style.left;
-          clone.style.top = original.style.top;
+          clone.style.zIndex = "1";
 
           document.body.appendChild(clone);
-
-          setTimeout(() => {
-            clone.style.transition = "opacity 1s linear";
-            clone.style.opacity = "0";
-          }, 10);
 
           setTimeout(() => {
             clone.remove();
@@ -966,78 +1014,178 @@
         function startGlitchText() {
           glitchInterval = setInterval(() => {
             spawnGlitchText();
-          }, 50); // lower = more chaotic
+          }, 100); // lower = more chaotic
         }
 
         function stopGlitchText() {
           clearInterval(glitchInterval);
         }
 
-        function startVisualizer() {
-          const canvas = document.getElementById("visualizer");
-          ctx = canvas.getContext("2d");
-
-          canvas.width = window.innerWidth;
-          canvas.height = 200;
-
-          //const audioCtx = new AudioContext();
-
-          const source1 = 
-          audioCtx.createMediaElementSource(introAudio);
-          const source2 = 
-          audioCtx.createMediaElementSource(loopAudio);
-          analyser = audioCtx.createAnalyser();
-
-          source1.connect(analyser);
-          source2.connect(analyser);
-
-          analyser.connect(audioCtx.destination);
-
-          analyser.fftSize = 64;
-
-          bufferLength = analyser.frequencyBinCount;
-          dataArray = new Uint8Array(bufferLength);
-
-          visualizerActive = true;
-
-          function draw() {
-            if (!visualizerActive) return;
-
-            animationId = requestAnimationFrame(draw);
-
-            analyser.getByteFrequencyData(dataArray);
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            let barWidth = canvas.width / bufferLength;
-
-            for (let i = 0; i < bufferLength; i++) {
-              let height = dataArray[i];
-
-              ctx.fillStyle = "white"; // white bars
-              ctx.globalAlpha = 0.6; // transparency
-
-              ctx.fillRect(
-                i * barWidth,
-                canvas.height - height,
-                barWidth - 2,
-                height,
-              );
+        function startShutdownSequence() {
+          isStopping = true;
+          document.querySelectorAll("*").forEach((el) => {
+            if (el.style.pointerEvents === "none") {
+              el.remove(); // 🔥 removes all clones
             }
-          }
+          });
+          const popups = document.querySelectorAll(".popup");
 
-          draw();
+          let i = 0;
+
+          const interval = setInterval(() => {
+            if (i >= popups.length) {
+              clearInterval(interval);
+              return;
+            }
+
+            popups[i].remove();
+            i++;
+          }, 50); // 🔥 speed of disappearance
+          isStopping = true;
+          stopErrorAudio();
+          stopPulse();
+          stopHackText();
+          clearTimeout(errorTimer);
+          stopScreenShake();
+          removeAllPopups();
+          stopGlitchText();
+          //stopVisualizer();
+
+          setTimeout(() => {
+            document.querySelectorAll("trail-clone").forEach((clone) => {
+              //if (clone.style.pointerEvents === "none") {
+              clone.remove(); // 🔥 remove all clones
+              //}
+              isStopping = false;
+            });
+          }, 100);
+          print("Terminal reset complete. All systems normal.");
         }
 
-        function stopVisualizer() {
-          visualizerActive = false;
-          cancelAnimationFrame(animationId);
+        function spawnTxtFile() {
+          const popup = document.createElement("div");
+          popup.classList.add("popup");
 
-          const canvas = 
-          document.getElementById("visualizer");
-          const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          popup.style.position = "fixed";
+          popup.style.left = "200px";
+          popup.style.top = "150px";
+          popup.style.width = "300px";
+          popup.style.height = "200px";
+          popup.style.background = "#111";
+          popup.style.border = "1px solid #00ff88";
+          popup.style.resize = "both"; // 🔥 resizable
+          popup.style.overflow = "hidden"; // needed for resize
+          popup.style.zIndex = "10";
+
+          popup.hasTrail = false;
+
+          // HEADER (for dragging)
+          const header = document.createElement("div");
+          header.textContent = "notes.txt";
+          header.style.background = "#222";
+          header.style.padding = "5px";
+          header.style.cursor = "move";
+          header.style.userSelect = "none";
+          header.style.borderBottom = "1px solid #00ff88";
+
+          // TEXT AREA
+          const textarea = document.createElement("textarea");
+          textarea.style.width = "100%";
+          textarea.style.height = "calc(100% - 30px)";
+          textarea.style.background = "black";
+          textarea.style.color = "white";
+          textarea.style.border = "none";
+          textarea.style.outline = "none";
+          textarea.style.resize = "none";
+          textarea.style.padding = "5px";
+
+          textarea.value =
+            "Hello! Welcome to your notes.\n\nYou can write anything you want here. This is a safe space for you to jot down your thoughts, ideas, or anything else. Feel free to use it as you like!\n\n\n";
+
+          popup.appendChild(header);
+          popup.appendChild(textarea);
+          document.body.appendChild(popup);
+
+          // make draggable (you already have this)
+          makeDraggable(popup, header);
         }
+        /*
+              function startVisualizer() {
+                const canvas = document.getElementById("visualizer");
+                const ctx = canvas.getContext("2d");
+                window.addEventListener("resize", () => {
+                  canvas.width = window.innerWidth;
+                  canvas.height = window.innerHeight * 0.5;
+                });
+
+                document.body.appendChild(canvas);
+
+                canvas.style.position = "fixed";
+                canvas.style.top = "50%";
+                canvas.style.left = "50%";
+                canvas.style.transform = "translate(-50%, -50%)";
+
+                canvas.style.width = "100%";
+                canvas.style.height = "50%";
+
+                canvas.style.pointerEvents = "none";
+                canvas.style.zIndex = "0";
+
+                //const audioCtx = new AudioContext();
+
+                const source1 = audioCtx.createMediaElementSource(introAudio);
+                const source2 = audioCtx.createMediaElementSource(loopAudio);
+                analyser = audioCtx.createAnalyser();
+
+                source1.connect(analyser);
+                source2.connect(analyser);
+
+                analyser.connect(audioCtx.destination);
+
+                analyser.fftSize = 64;
+
+                bufferLength = analyser.frequencyBinCount;
+                let prevHeights = new Array(bufferLength).fill(0);
+                dataArray = new Uint8Array(bufferLength);
+
+                visualizerActive = true;
+
+                let centerY = canvas.height / 2;
+                let barWidth = canvas.width / bufferLength;
+                let max = 255; // 🔥 constant max for stability
+
+                for (let i = 0; i < bufferLength; i++) {
+                  let base = dataArray[i] / max;
+                  base = Math.pow(base, 0.6);
+
+                  let height = base * canvas.height * 0.6;
+
+                  if (height < 5) {
+                    height = 5 + Math.random() * 5;
+                  }
+
+                  let x = i * barWidth;
+
+                  ctx.fillStyle = "rgba(255,0,0,0.05)";
+
+                  // 🔼 TOP BAR
+                  ctx.fillRect(x, centerY - height, barWidth - 1, height);
+
+                  // 🔽 BOTTOM BAR
+                  ctx.fillRect(x, centerY, barWidth - 1, height);
+                }
+              }
+
+              function stopVisualizer() {
+                visualizerActive = false;
+                cancelAnimationFrame(animationId);
+
+                const canvas = document.getElementById("visualizer");
+                const ctx = canvas.getContext("2d");
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+              }
+              // TEST TEST TEST
+              */
       </script>
     </div>
   </body>
